@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/colors.dart';
 import '../core/game_controller.dart';
@@ -19,7 +20,81 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
+class _PolygonPainter extends CustomPainter {
+  _PolygonPainter({
+    required this.sides,
+    required this.color,
+    required this.cornerRadius,
+  });
+
+  final int sides; // 6 or 8
+  final Color color;
+  final double cornerRadius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+
+    // 余白を入れて絶対にはみ出さないようにする
+    final r = math.min(size.width, size.height) / 2 - 6;
+
+    final raw = <Offset>[];
+    final start = -math.pi / 2; // 上から開始
+    for (int i = 0; i < sides; i++) {
+      final a = start + (2 * math.pi * i / sides);
+      raw.add(Offset(cx + r * math.cos(a), cy + r * math.sin(a)));
+    }
+
+    final path = _roundedPolygonPath(raw, cornerRadius);
+    canvas.drawPath(path, paint);
+  }
+
+  Path _roundedPolygonPath(List<Offset> pts, double rad) {
+    // 角丸の簡易版：各頂点の前後を少し内側にずらして二次曲線で繋ぐ
+    final n = pts.length;
+    final path = Path();
+
+    Offset inset(Offset from, Offset to, double d) {
+      final v = to - from;
+      final len = v.distance;
+      if (len == 0) return from;
+      return from + v / len * d;
+    }
+
+    for (int i = 0; i < n; i++) {
+      final prev = pts[(i - 1 + n) % n];
+      final cur = pts[i];
+      final next = pts[(i + 1) % n];
+
+      final p1 = inset(cur, prev, rad);
+      final p2 = inset(cur, next, rad);
+
+      if (i == 0) {
+        path.moveTo(p2.dx, p2.dy);
+      } else {
+        path.lineTo(p2.dx, p2.dy);
+      }
+
+      path.quadraticBezierTo(cur.dx, cur.dy, p1.dx, p1.dy);
+    }
+
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldRepaint(covariant _PolygonPainter oldDelegate) =>
+      oldDelegate.sides != sides ||
+      oldDelegate.color != color ||
+      oldDelegate.cornerRadius != cornerRadius;
+}
+
 class _GameScreenState extends State<GameScreen> {
+  bool _navigated = false;
+
   @override
   void initState() {
     super.initState();
@@ -29,10 +104,12 @@ class _GameScreenState extends State<GameScreen> {
 
   void _listener() {
     if (widget.controller.isFinished) {
+      if (_navigated) return;
+      _navigated = true;
       widget.onFinished();
-    } else {
-      setState(() {});
+      return;
     }
+    setState(() {});
   }
 
   @override
@@ -48,8 +125,6 @@ class _GameScreenState extends State<GameScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final level = widget.controller.level;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7F9), // クリーン寄りの薄グレーRf
       body: Stack(
@@ -59,8 +134,8 @@ class _GameScreenState extends State<GameScreen> {
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
               child: Column(
                 children: [
+                  const SizedBox(height: 30),
                   _miniHeader(context),
-                  const SizedBox(height: 10),
 
                   Expanded(
                     child: Center(
@@ -120,7 +195,6 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _prompt(StroopQuestion q) {
-    // 強調したい対象語だけを太く
     final target = switch (q.questionType) {
       QuestionType.textColor => '文字の色',
       QuestionType.wordColor => '文字の内容',
@@ -166,45 +240,86 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _stroopCard(StroopQuestion q) {
-    final bg = q.bgColor == null ? Colors.white : q.bgColor!.ui;
+    final shapeColor = q.bgColor == null ? Colors.white : q.bgColor!.uiBg;
     final textColor = q.textColor.ui;
 
     return Container(
       width: 250,
-      height: 220,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-            color: Colors.black.withValues(alpha: 0.08),
+      height: 250,
+      decoration: BoxDecoration(color: Colors.transparent),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          _shapeWidget(q.level >= 4 ? q.shape : ShapeType.square, shapeColor),
+
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Text(
+                q.word,
+                style: TextStyle(
+                  fontSize: 58,
+                  fontWeight: FontWeight.w900,
+                  foreground: Paint()
+                    ..style = PaintingStyle.stroke
+                    ..strokeWidth = 2
+                    ..color = Colors.black,
+                ),
+              ),
+              Text(
+                q.word,
+                style: TextStyle(
+                  fontSize: 58,
+                  fontWeight: FontWeight.w900,
+                  color: q.textColor.ui,
+                ),
+              ),
+            ],
           ),
         ],
-        border: Border.all(color: Colors.black12),
-      ),
-      child: Center(
-        child: Text(
-          q.word,
-          style: TextStyle(
-            fontSize: 58,
-            fontWeight: FontWeight.w900,
-            color: textColor,
-          ),
-        ),
       ),
     );
   }
 
-  Widget _choices(StroopQuestion q) {
-    final colors = StroopColor.values.toList();
-
-    // レベル1-3は固定順，4以降シャッフル
-    if (q.level >= 4) {
-      colors.shuffle();
+  Widget _shapeWidget(ShapeType shape, Color color) {
+    switch (shape) {
+      case ShapeType.square:
+        return Container(
+          width: 250,
+          height: 250,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+                color: Colors.black.withValues(alpha: 0.08),
+              ),
+            ],
+          ),
+        );
+      case ShapeType.circle:
+        return Container(
+          width: 250,
+          height: 250,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        );
+      case ShapeType.hexagon:
+        return CustomPaint(
+          size: const Size(250, 250),
+          painter: _PolygonPainter(sides: 6, color: color, cornerRadius: 14),
+        );
+      case ShapeType.octagon:
+        return CustomPaint(
+          size: const Size(250, 250),
+          painter: _PolygonPainter(sides: 8, color: color, cornerRadius: 14),
+        );
     }
+  }
 
+  Widget _choices(StroopQuestion q) {
+    final colors = widget.controller.options;
     final isLevel5 = (q.level == 5);
 
     return Column(
@@ -230,7 +345,6 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _choice(StroopColor c, bool level5Style) {
     if (level5Style) {
-      // 白背景＋色文字（黄色は暗め）
       return Pressable(
         onPressed: () => widget.controller.answer(c),
         child: Container(
@@ -249,7 +363,7 @@ class _GameScreenState extends State<GameScreen> {
             ],
           ),
           child: Text(
-            c.labelHira,
+            widget.controller.optionLabel(c),
             style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w900,

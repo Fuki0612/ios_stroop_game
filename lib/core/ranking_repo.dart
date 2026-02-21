@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RankingRepo {
-  static const _keep = 30;
+  static const _keep = 10;
 
   String _key(int level) => 'ranking_v1_level_$level';
 
@@ -25,10 +25,10 @@ class RankingRepo {
     await sp.setString(_key(level), json);
   }
 
-  /// Top5を「同点同順位」で整形して返す
-  Future<List<RankLine>> top5WithTies(int level) async {
+  /// Top3を「同点同順位」で整形して返す
+  Future<List<RankLine>> top3WithTies(int level) async {
     final scores = await loadScores(level);
-    final top = scores.take(5).toList();
+    final top = scores.take(3).toList();
 
     final out = <RankLine>[];
     int rank = 1;

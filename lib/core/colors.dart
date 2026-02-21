@@ -30,4 +30,11 @@ extension StroopColorX on StroopColor {
     StroopColor.yellow => Colors.amber.shade800,
     StroopColor.green => Colors.green,
   };
+
+  Color get uiBg => switch (this) {
+    StroopColor.red => Colors.red.shade200,
+    StroopColor.blue => Colors.blue.shade200,
+    StroopColor.yellow => Colors.amber.shade200,
+    StroopColor.green => Colors.green.shade200,
+  };
 }

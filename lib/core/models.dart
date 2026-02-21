@@ -2,7 +2,7 @@ import 'colors.dart';
 
 enum WordForm { hira, kata, kanji }
 
-enum ShapeType { square, triangle, circle }
+enum ShapeType { square, circle, hexagon, octagon }
 
 enum QuestionType { textColor, wordColor, bgColor, unrelatedColor }
 
