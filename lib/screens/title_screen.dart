@@ -11,8 +11,7 @@ class TitleScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFFF6F7F9);
-
+    final bg = Theme.of(context).scaffoldBackgroundColor;
     return Scaffold(
       backgroundColor: bg,
       body: SafeArea(
@@ -20,9 +19,9 @@ class TitleScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
           child: Column(
             children: [
-              const SizedBox(height: 10),
+              const SizedBox(height: 30),
               const Text(
-                'Stroop',
+                'Stroop Max',
                 style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 8),
@@ -31,6 +30,7 @@ class TitleScreen extends StatelessWidget {
                 style: TextStyle(
                   color: Colors.black54,
                   fontWeight: FontWeight.w600,
+                  fontSize: 17,
                 ),
               ),
               const SizedBox(height: 18),
@@ -48,7 +48,13 @@ class TitleScreen extends StatelessWidget {
                             height: 56,
                             child: ElevatedButton(
                               onPressed: () => _startLevel(context, level),
-                              child: Text('レベル $level'),
+                              child: Text(
+                                'レベル $level',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -66,7 +72,13 @@ class TitleScreen extends StatelessWidget {
                                 ),
                               );
                             },
-                            child: const Text('記録を見る'),
+                            child: const Text(
+                              '記録を見る',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
                           ),
                         ),
                       ],

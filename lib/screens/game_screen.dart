@@ -126,7 +126,7 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F9), // クリーン寄りの薄グレーRf
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       body: Stack(
         children: [
           SafeArea(
@@ -241,7 +241,6 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _stroopCard(StroopQuestion q) {
     final shapeColor = q.bgColor == null ? Colors.white : q.bgColor!.uiBg;
-    final textColor = q.textColor.ui;
 
     return Container(
       width: 250,
