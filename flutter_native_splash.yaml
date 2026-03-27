@@ -1,0 +1,3 @@
+flutter_native_splash:
+  color: "#FFFFFF" 
+  image: assets/launcher_icon/ios_icon.png

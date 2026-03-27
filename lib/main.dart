@@ -11,7 +11,7 @@ class StroopApp extends StatelessWidget {
     final theme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.teal,
+        seedColor: const Color(0xFF009688),
         brightness: Brightness.light,
       ),
     );
